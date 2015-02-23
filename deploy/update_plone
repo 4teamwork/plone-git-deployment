@@ -1,0 +1,134 @@
+#!/usr/bin/env python
+
+import os
+import re
+import shlex
+import subprocess
+import sys
+
+
+def update_plone():
+    buildout_required = has_changed(r'^\w*.cfg$') or has_changed(r'setup.py')
+    upgrade_required = buildout_required or has_changed(r'/upgrades/')
+    templates_changed = has_changed(r'\.pt$')
+
+    print ''
+    print 'UPDATE PLONE'
+    print '${0} -> ${1}'.format(OLDREV, NEWREV)
+    print 'buildout required:', bool(buildout_required)
+    print 'upgrade required:', bool(upgrade_required)
+    print 'templates changed:', bool(templates_changed)
+    sys.stdout.flush()
+
+    assure_maintenance_server_running()
+    if not buildout_required and not upgrade_required and not templates_changed:
+        restart_instances()
+        return
+
+    if templates_changed:
+        stop_instances()
+
+    if buildout_required:
+        run_buildout()
+
+    stop_instances()
+    if upgrade_required:
+        run_upgrades()
+    start_instances()
+
+
+def run_bg(cmd):
+    proc = subprocess.Popen(shlex.split(cmd),
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
+
+    stdout, stderr = proc.communicate()
+    if proc.poll():
+        print 'ERROR {0}'.format(cmd)
+        print stdout
+        print stderr
+        sys.stdout.flush()
+        sys.exit(1)
+    return stdout
+
+
+def run_fg(cmd):
+    print ''
+    print '>', cmd
+    sys.stdout.flush()
+    if os.system(cmd):
+        sys.exit(1)
+
+
+def has_changed(file_regex):
+    return filter(re.compile(file_regex).match, CHANGED)
+
+
+def assure_supervisord_running():
+    try:
+        subprocess.check_call(shlex.split('bin/supervisorctl avail'),
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError, exc:
+        if exc.returncode != 2:
+            raise
+        run_fg('bin/supervisord')
+
+
+def assure_maintenance_server_running():
+    status = supervisor_status()
+    if 'maintenance' in status and status['maintenance'] != 'RUNNING':
+        run_fg('bin/supervisorctl start maintenance')
+
+
+
+def supervisor_status():
+    assure_supervisord_running()
+    return dict(map(lambda line: line.split()[:2],
+                    run_bg('bin/supervisorctl status').strip().splitlines()))
+
+
+def instances():
+    for name, status in supervisor_status().items():
+        if not name.startswith('instance'):
+            continue
+
+        yield name, status
+
+
+def stop_instances():
+    names = [name for (name, status) in instances() if status != 'STOPPED']
+    run_fg('bin/supervisorctl stop {0}'.format(' '.join(names)))
+
+
+def start_instances():
+    names = [name for (name, status) in instances()
+             if status != 'RUNNING' and name != 'instance0']
+    run_fg('bin/supervisorctl start {0}'.format(' '.join(names)))
+
+
+def restart_instances():
+    for instance_name, status in instances():
+        if instance_name == 'instance0':
+            continue
+
+        if status != 'STOPPED':
+            run_fg('bin/supervisorctl stop {0}'.format(instance_name))
+        run_fg('bin/supervisorctl start {0}'.format(instance_name))
+
+
+def run_buildout():
+    run_fg('bin/buildout')
+
+
+def run_upgrades():
+    if supervisor_status()['instance0'] != 'RUNNING':
+        run_fg('bin/supervisorctl start instance0')
+
+    run_fg('bin/upgrade install --pick-site --proposed')
+
+
+if __name__ == '__main__':
+    OLDREV, NEWREV = sys.argv[1:]
+    CHANGED = run_bg('git diff {0} {1} --name-only'.format(OLDREV, NEWREV)).strip().splitlines()
+    update_plone()
