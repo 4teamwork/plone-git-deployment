@@ -31,7 +31,9 @@ $ cd the-package-repository
 $ mkdir deploy
 $ cd deploy
 $ wget https://raw.githubusercontent.com/4teamwork/plone-git-deployment/master/deploy/after_push
+$ chmod +x after_push
 $ wget https://raw.githubusercontent.com/4teamwork/plone-git-deployment/master/deploy/update_plone
+$ chmod +x update_plone
 ```
 
 The directories `tmp` and `log` most exist in the root:
@@ -40,6 +42,9 @@ The directories `tmp` and `log` most exist in the root:
 $ cd the-package-repository
 $ ln -s var/log
 $ mkdir tmp
+$ cd tmp
+$ echo "*" > .gitignore
+$ echo "!.gitignore" >> .gitignore
 ```
 
 
