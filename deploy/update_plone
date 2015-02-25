@@ -35,6 +35,7 @@ def update_plone():
     if upgrade_required:
         run_upgrades()
     start_instances()
+    recook_resources()
 
 
 def run_bg(cmd):
@@ -126,6 +127,10 @@ def run_upgrades():
         run_fg('bin/supervisorctl start instance0')
 
     run_fg('bin/upgrade install --pick-site --proposed')
+
+
+def recook_resources():
+    run_fg('bin/upgrade recook --pick-site')
 
 
 if __name__ == '__main__':
