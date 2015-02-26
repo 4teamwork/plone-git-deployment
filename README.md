@@ -74,6 +74,10 @@ setup_remote "testing" "zope@my.server.ch:/home/zope/02-plone-my.website.ch-TEST
 ```
 
 ```sh
+$ chmod +x scripts/setup-git-remotes
+```
+
+```sh
 $ cd the-package-repository
 $ ./scripts/setup-git-remotes
 ```
