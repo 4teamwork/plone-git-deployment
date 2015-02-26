@@ -23,6 +23,7 @@ def update_plone():
     assure_maintenance_server_running()
     if not buildout_required and not upgrade_required and not templates_changed:
         restart_instances()
+        recook_resources()
         return
 
     if templates_changed:
