@@ -16,7 +16,7 @@ meet some prerequisits:
   from source.
 - Using [ftw-buildouts](https://github.com/4teamwork/ftw-buildouts)'
   `production.cfg` as buildout configuration base is recommended.
-- Using [ftw.upgrade](https://github.com/4teamwork/ftw.upgrade) (>=1.13.0) is
+- Using [ftw.upgrade](https://github.com/4teamwork/ftw.upgrade) (>=1.14.0) is
   required for automatically updating the Plone site.
 
 
