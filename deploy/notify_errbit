@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+if [ ! -x bin/instance0 ]; then
+    exit 1
+fi
+
+# Export all ERRBIT environment variables from bin/instance
+`./bin/instance0 shell 'export -p | grep ERRBIT' | sed -e 's:"::g'`
+
+ERRBIT_URL=`echo $ERRBIT_URL | sed -e 's:/notifier_api.*:/deploys.txt:'`
+GIT_REMOTE=`git remote -v | cut -f 2 | cut -d ' ' -f 1 | head -1`
+GIT_REV=`git rev-parse HEAD`
+GIT_MESSAGE=`git log --pretty=format:'%s' -n 1`
+GIT_COMMITTER=`git log --pretty=format:'%cN' -n 1`
+
+if [[ -z $ERRBIT_URL || -z $ERRBIT_API_KEY || -z $ERRBIT_APP_ID || -z $ERRBIT_ENVIRONMENT ]]; then
+    exit 1
+fi
+
+curl --silent $ERRBIT_URL \
+    --data "api_key=$ERRBIT_API_KEY" \
+    --data "app_id=$ERRBIT_APP_ID" \
+    --data "deploy[local_username]=$GIT_COMMITTER" \
+    --data "deploy[rails_env]=$ERRBIT_ENVIRONMENT" \
+    --data "deploy[scm_repository]=$GIT_REMOTE" \
+    --data "deploy[scm_revision]=$GIT_REV" \
+    --data "deploy[message]=$GIT_MESSAGE" > /dev/null
+echo "Deployment reported to errbit."

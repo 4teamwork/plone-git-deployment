@@ -47,6 +47,27 @@ $ echo "*" > .gitignore
 $ echo "!.gitignore" >> .gitignore
 ```
 
+### errbit deployment notification
+
+The ``notify_errbit`` script notifies errbit about a deployment.
+
+For this to work, there must be a ``bin/instance0`` having these environment
+variables declared:
+- ``ERRBIT_URL``
+- ``ERRBIT_API_KEY``
+- ``ERRBIT_APP_ID`` (be aware that ``errbit-python`` does not need this)
+- ``ERRBIT_ENVIRONMENT``
+
+Installation:
+
+```sh
+$ cd the-package-repository
+$ mkdir deploy
+$ cd deploy
+$ wget https://raw.githubusercontent.com/4teamwork/plone-git-deployment/master/deploy/notify_errbit
+$ chmod +x notify_errbit
+```
+
 
 ## Setup remotes
 
