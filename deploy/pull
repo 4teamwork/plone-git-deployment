@@ -22,7 +22,7 @@ git pull --ff-only
 echo ""
 newrev=`git rev-parse HEAD`
 
-if [[ "$oldrev" -eq "$newrev" ]]; then
+if [ $oldrev == $newrev ]; then
     echo "Aborting because there are no new commits ($oldrev -> $newrev)"
     exit 0;
 fi
@@ -30,3 +30,6 @@ fi
 echo "> deploy/after_push"
 logfile=log/deploy.log
 deploy/after_push $oldrev $newrev 2>&1 | tee -a $logfile
+if [ $? -eq 0 ]; then
+    git rev-parse HEAD > ./.git/LAST_DEPLOY_HEAD
+fi
