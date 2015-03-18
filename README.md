@@ -130,3 +130,11 @@ $ cd the-package-repository
 $ ./scripts/setup-git-remotes
 $ git push testing master
 ```
+
+# VPN without SSH
+
+When the deployment is in a VPN without SSH access, we cannot push to the
+deployment.
+In this situation the ``deploy/pull`` script can be used for simulating a push.
+It pulls from the upstream (the branch must have an upstream defined) and runs
+the deployment scripts.
