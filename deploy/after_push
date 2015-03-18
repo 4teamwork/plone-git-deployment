@@ -13,8 +13,8 @@ umask 002
 
 git submodule sync && git submodule update --init --recursive
 
-run deploy/update_plone
+run deploy/update_plone || exit $?
 
 if [ -x deploy/notifiy_errbit ]; then
-    deploy/notifiy_errbit
+    deploy/notifiy_errbit || exit $?
 fi
