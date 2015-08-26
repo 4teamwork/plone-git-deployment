@@ -9,6 +9,8 @@ import sys
 
 CHANGED_FILES = []
 
+SITES = []
+
 
 def update_plone(oldrev, newrev):
     print 'UPDATE PLONE'
@@ -50,6 +52,8 @@ def update_plone(oldrev, newrev):
 
 
 def run_bg(cmd, cwd=None):
+    if isinstance(cmd, unicode):
+       cmd = cmd.encode('ascii','ignore')
     proc = subprocess.Popen(shlex.split(cmd),
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE,
@@ -115,7 +119,6 @@ def assure_maintenance_server_running():
         run_fg('bin/supervisorctl start maintenance')
 
 
-
 def supervisor_status():
     assure_supervisord_running()
     return dict(map(lambda line: line.split()[:2],
@@ -157,21 +160,40 @@ def run_buildout():
 
 
 def run_upgrades():
-    run_fg('bin/upgrade install --pick-site --proposed')
+    for site in get_sites():
+        run_fg('bin/upgrade install -s %s --proposed' % site['path'])
     return True
 
 
 def has_proposed_upgrades():
-    data = json.loads(run_bg('./bin/upgrade list --pick-site --upgrades --json'))
-    print 'Proposed upgrades:', len(data)
-    sys.stdout.flush()
-    return len(data) > 0
+    for site in get_sites():
+        command = './bin/upgrade list -s %s --upgrades --json' % site['path']
+        data = json.loads(run_bg(command))
+        if len(data) > 0:
+            print 'Proposed upgrades found.'
+            sys.stdout.flush()
+            return True
 
+    print 'Proposed upgrades: 0'
+    sys.stdout.flush()
+    return False
 
 
 def recook_resources():
-    run_fg('bin/upgrade recook --pick-site')
+    for site in get_sites():
+        run_fg('bin/upgrade recook -s %s' % site['path'])
 
+
+def get_sites():
+    if len(SITES) == 0:
+        SITES.extend(json.loads(run_bg('./bin/upgrade sites --json')))
+        if len(SITES) == 0:
+            print "ERROR: No site found."
+            sys.exit(1)
+
+        print 'Sites found:', len(SITES)
+
+    return SITES
 
 if __name__ == '__main__':
     update_plone(*sys.argv[1:])
