@@ -1,0 +1,53 @@
+#!/bin/sh
+
+echo "Setting up plone git push deployment at `pwd`"
+echo ""
+
+echo "This will create:"
+echo "./deploy/*"
+echo "./tmp/*"
+echo "./log"
+echo "./scripts/setup-git-remotes"
+echo ""
+
+while true; do
+    read -p "Do you wish to continue? " yn
+    case $yn in
+        [Yy]* ) break;;
+        [Nn]* ) exit 1;;
+        * ) echo "Please answer yes or no.";;
+    esac
+done
+
+
+echo ""
+echo "----- SETUP -----"
+set -v
+
+mkdir -p deploy tmp scripts
+curl https://raw.githubusercontent.com/4teamwork/plone-git-deployment/master/deploy/after_push > deploy/after_push
+curl https://raw.githubusercontent.com/4teamwork/plone-git-deployment/master/deploy/notify_errbit > deploy/notify_errbit
+curl https://raw.githubusercontent.com/4teamwork/plone-git-deployment/master/deploy/pull > deploy/pull
+curl https://raw.githubusercontent.com/4teamwork/plone-git-deployment/master/deploy/update_plone > deploy/update_plone
+curl https://raw.githubusercontent.com/4teamwork/plone-git-deployment/master/scripts/setup-git-remotes > scripts/setup-git-remotes
+chmod +x deploy/after_push
+chmod +x deploy/notify_errbit
+chmod +x deploy/pull
+chmod +x deploy/update_plone
+chmod +x scripts/setup-git-remotes
+
+if [[ -e log ]]; then
+    rm log
+fi
+ln -s var/log
+
+echo "*" > tmp/.gitignore
+echo "!.gitignore" >> tmp/.gitignore
+
+set +v
+echo "----- DONE -----"
+echo ""
+echo "Next steps:"
+echo "- update remote names and URLs in scripts/setup-git-remotes"
+echo "- git-commit the changes"
+echo "- run scripts/setup-git-remotes"
