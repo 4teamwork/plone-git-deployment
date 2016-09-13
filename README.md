@@ -108,7 +108,7 @@ $ ./scripts/setup-git-remotes
 
 ## Setup GIT hooks on server
 
-In order to set up the GIT hooks you need to install `git-deploy` locally.
+In order to set up the GIT hooks you need to install `git-deploy` **locally**.
 The setup is done only once, so not everybody has to install git-deploy.
 The deployment should already exist and buildout should have ran once.
 
