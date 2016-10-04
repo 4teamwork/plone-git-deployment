@@ -30,10 +30,8 @@ def update_plone(oldrev, newrev):
     print 'templates changed:', bool(templates_changed)
     sys.stdout.flush()
 
-    if supervisor_status()['instance0'] != 'STOPPED':
-        run_fg('bin/supervisorctl stop instance0')
-
-    assure_maintenance_server_running()
+    maybe_start('maintenance')
+    maybe_stop('instance0')
 
     if templates_changed:
         stop_load_balanced_instances()
@@ -43,13 +41,14 @@ def update_plone(oldrev, newrev):
         run_fg('bin/supervisorctl reread')
         run_fg('bin/supervisorctl update')
 
-    run_fg('bin/supervisorctl start instance0')
+    maybe_start('instance0')
     if has_proposed_upgrades():
         stop_load_balanced_instances()
         run_upgrades()
         start_load_balanced_instances()
     else:
         restart_load_balanced_instances()
+
     recook_resources()
 
 
@@ -115,12 +114,6 @@ def assure_supervisord_running():
         run_fg('bin/supervisord')
 
 
-def assure_maintenance_server_running():
-    status = supervisor_status()
-    if 'maintenance' in status and status['maintenance'] != 'RUNNING':
-        run_fg('bin/supervisorctl start maintenance')
-
-
 def supervisor_status():
     assure_supervisord_running()
     return dict(map(lambda line: line.split()[:2],
@@ -157,6 +150,18 @@ def restart_load_balanced_instances():
         if status != 'STOPPED':
             run_fg('bin/supervisorctl stop {0}'.format(instance_name))
         run_fg('bin/supervisorctl start {0}'.format(instance_name))
+
+
+def maybe_stop(name):
+    status = supervisor_status()
+    if name in status and status[name] != 'STOPPED':
+        run_fg('bin/supervisorctl stop {}'.format(name))
+
+
+def maybe_start(name):
+    status = supervisor_status()
+    if name in status and status[name] != 'RUNNING':
+        run_fg('bin/supervisorctl start {}'.format(name))
 
 
 def run_buildout():
