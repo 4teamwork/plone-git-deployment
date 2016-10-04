@@ -138,3 +138,21 @@ deployment.
 In this situation the ``deploy/pull`` script can be used for simulating a push.
 It pulls from the upstream (the branch must have an upstream defined) and runs
 the deployment scripts.
+
+
+# Custom update script
+
+The ``deploy/after_push`` script can be configured to run another script
+than ``deploy/update_plone``.
+
+For example you could add a ``scripts/nightly-reinstall`` and then add to
+your nightly buildout configuration file:
+
+```ini
+[buildout]
+deployment-update-plone-script = scripts/nightly-reinstall
+```
+
+Be aware that this must be in the ``buildout.cfg`` of the deployment (which
+may be a symlink), but it can not be extended since the buildout config file
+is not parsed recursively for this option.
