@@ -32,6 +32,7 @@ def update_plone(oldrev, newrev):
 
     maybe_start('maintenance')
     maybe_stop('instance0')
+    maybe_stop('instancepub')
 
     if templates_changed:
         stop_load_balanced_instances()
@@ -50,6 +51,7 @@ def update_plone(oldrev, newrev):
         restart_load_balanced_instances()
 
     recook_resources()
+    maybe_start('instancepub')
 
 
 def run_bg(cmd, cwd=None):
