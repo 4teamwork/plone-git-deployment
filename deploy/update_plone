@@ -36,7 +36,7 @@ def update_plone(oldrev, newrev):
     assure_maintenance_server_running()
 
     if templates_changed:
-        stop_instances()
+        stop_load_balanced_instances()
 
     if buildout_required:
         run_buildout()
@@ -45,11 +45,11 @@ def update_plone(oldrev, newrev):
 
     run_fg('bin/supervisorctl start instance0')
     if has_proposed_upgrades():
-        stop_instances()
+        stop_load_balanced_instances()
         run_upgrades()
-        start_instances()
+        start_load_balanced_instances()
     else:
-        restart_instances()
+        restart_load_balanced_instances()
     recook_resources()
 
 
@@ -127,28 +127,30 @@ def supervisor_status():
                     run_bg('bin/supervisorctl status').strip().splitlines()))
 
 
-def instances():
+def load_balanced_instances():
+    whitelist = (
+        'instance1', 'instance2', 'instance3', 'instance4', 'instance5',
+        'instance6', 'instance7', 'instance8', 'instance9')
+
     for name, status in supervisor_status().items():
-        if not name.startswith('instance'):
-            continue
-
-        yield name, status
+        if name in whitelist:
+            yield name, status
 
 
-def stop_instances():
-    names = [name for (name, status) in instances()
+def stop_load_balanced_instances():
+    names = [name for (name, status) in load_balanced_instances()
              if status != 'STOPPED' and name != 'instance0']
     run_fg('bin/supervisorctl stop {0}'.format(' '.join(names)))
 
 
-def start_instances():
-    names = [name for (name, status) in instances()
+def start_load_balanced_instances():
+    names = [name for (name, status) in load_balanced_instances()
              if status != 'RUNNING' and name != 'instance0']
     run_fg('bin/supervisorctl start {0}'.format(' '.join(names)))
 
 
-def restart_instances():
-    for instance_name, status in instances():
+def restart_load_balanced_instances():
+    for instance_name, status in load_balanced_instances():
         if instance_name == 'instance0':
             continue
 
