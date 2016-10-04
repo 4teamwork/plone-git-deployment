@@ -27,17 +27,12 @@ def update_plone(oldrev, newrev):
     print ''
 
     buildout_required = has_changed(r'^.*\.cfg$') or has_changed(r'setup.py')
-    templates_changed = has_changed(r'\.pt$')
     print 'buildout required:', bool(buildout_required)
-    print 'templates changed:', bool(templates_changed)
     sys.stdout.flush()
 
     maybe_start('maintenance')
     maybe_stop('instance0')
     maybe_stop('instancepub')
-
-    if templates_changed:
-        stop_load_balanced_instances()
 
     if buildout_required:
         run_buildout()
