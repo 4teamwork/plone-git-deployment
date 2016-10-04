@@ -156,3 +156,31 @@ deployment-update-plone-script = scripts/nightly-reinstall
 Be aware that this must be in the ``buildout.cfg`` of the deployment (which
 may be a symlink), but it can not be extended since the buildout config file
 is not parsed recursively for this option.
+
+
+# Zero Downtime
+
+When upgrades need to be installed, the script normally takes the site offline
+in order to prevent conflicting writes to the database while the upgrades run.
+
+When having a zero downtime environment, such as when only a publihser writes
+the database (which is stopped while running upgrades), it is safe to keep the
+site running for anonymous users.
+
+In order to enable this behavior you must set the ``deployment-zero-downtime``
+option in the buildout configurations which should be upgraded in zero downtime
+mode.
+
+**WARNING: The ``deployment-zero-downtime`` must be in the ``buildout.cfg`` file
+of the deployment. It does not work when using ``extend`` for this option since
+the option is directly read from ``buildout.cfg``.**
+
+Example::
+
+```ini
+[buildout]
+extends =
+    ...
+
+deployment-zero-downtime = true
+```

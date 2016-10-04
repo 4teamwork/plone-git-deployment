@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import ConfigParser
 import json
 import logging
 import os
@@ -15,6 +16,7 @@ LOG = logging.getLogger('update_plone')
 
 
 def update_plone(oldrev, newrev):
+    zero_downtime = is_zero_downtime_configured()
     print 'UPDATE PLONE'
     print '${0} -> ${1}'.format(oldrev, newrev)
 
@@ -28,6 +30,7 @@ def update_plone(oldrev, newrev):
 
     buildout_required = has_changed(r'^.*\.cfg$') or has_changed(r'setup.py')
     print 'buildout required:', bool(buildout_required)
+    print 'zero downtime:', zero_downtime
     sys.stdout.flush()
 
     maybe_start('maintenance')
@@ -45,7 +48,9 @@ def update_plone(oldrev, newrev):
 
     maybe_start('instance0')
     if has_proposed_upgrades():
-        stop_load_balanced_instances()
+        if not zero_downtime:
+            stop_load_balanced_instances()
+
         run_upgrades()
         start_load_balanced_instances()
     else:
@@ -222,6 +227,18 @@ def setup_logging():
     handler.setFormatter(logging.Formatter(
         '%(asctime)s %(levelname)s %(name)s (%(process)s): %(message)s'))
     logger.addHandler(handler)
+
+
+def is_zero_downtime_configured():
+    # The zero downtime configuration must be in the buildout.cfg (may be a
+    # symlink) but cannot be in an "extends" since those are not followed!
+    parser = ConfigParser.SafeConfigParser()
+    parser.read('buildout.cfg')
+    option = ('buildout', 'deployment-zero-downtime')
+    if not parser.has_option(*option):
+        return False
+    truthy = ('y', 'yes', 't', 'true', 'on', '1')
+    return parser.get(*option).strip().lower() in truthy
 
 
 if __name__ == '__main__':
