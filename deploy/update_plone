@@ -40,6 +40,8 @@ def update_plone(oldrev, newrev):
 
     if buildout_required:
         run_buildout()
+        run_fg('bin/supervisorctl reread')
+        run_fg('bin/supervisorctl update')
 
     run_fg('bin/supervisorctl start instance0')
     if has_proposed_upgrades():
