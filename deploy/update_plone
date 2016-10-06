@@ -40,7 +40,6 @@ def update_plone(oldrev, newrev):
     if buildout_required:
         run_buildout()
         run_fg('bin/supervisorctl reread')
-        run_fg('bin/supervisorctl update')
 
     maybe_restart('solr')
     maybe_restart('tika-server')
@@ -149,6 +148,7 @@ def stop_load_balanced_instances():
 def start_load_balanced_instances():
     names = [name for (name, status) in load_balanced_instances()
              if status != 'RUNNING' and name != 'instance0']
+    run_fg('bin/supervisorctl update {0}'.format(' '.join(names)))
     run_fg('bin/supervisorctl start {0}'.format(' '.join(names)))
 
 
@@ -159,6 +159,7 @@ def restart_load_balanced_instances():
 
         if status != 'STOPPED':
             run_fg('bin/supervisorctl stop {0}'.format(instance_name))
+        run_fg('bin/supervisorctl update {0}'.format(instance_name))
         run_fg('bin/supervisorctl start {0}'.format(instance_name))
 
 
@@ -171,6 +172,7 @@ def maybe_stop(name):
 def maybe_start(name):
     status = supervisor_status()
     if name in status and status[name] != 'RUNNING':
+        run_fg('bin/supervisorctl update {}'.format(name))
         run_fg('bin/supervisorctl start {}'.format(name))
 
 
