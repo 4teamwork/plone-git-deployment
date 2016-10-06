@@ -247,5 +247,5 @@ if __name__ == '__main__':
         ' '.join(sys.argv),
         os.environ.get('SSH_USER_NAME',
                        os.environ.get('SSH_USER_EMAIL',
-                                      os.environ.get('USER')))))
+                                      os.environ.get('USER', 'unknown user')))))
     update_plone(*sys.argv[1:])
