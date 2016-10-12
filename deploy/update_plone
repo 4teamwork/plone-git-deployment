@@ -78,7 +78,7 @@ def run_bg(cmd, cwd=None):
 
 
 def run_fg(cmd, abort_on_error=True):
-    LOG.info('> {}'.format(cmd))
+    LOG.info('> {0}'.format(cmd))
     print ''
     print '>', cmd
     sys.stdout.flush()
@@ -109,7 +109,7 @@ def update_sources():
                 run_bg('git diff {0} {1} --name-only'.format(oldrev, newrev),
                        cwd=path).strip().splitlines()))
         print path, oldrev, '=>', newrev
-        LOG.info('pulling {}: {} => {}'.format(path, oldrev, newrev))
+        LOG.info('pulling {0}: {1} => {2}'.format(path, oldrev, newrev))
 
 
 def assure_supervisord_running():
@@ -166,14 +166,14 @@ def restart_load_balanced_instances():
 def maybe_stop(name):
     status = supervisor_status()
     if name in status and status[name] != 'STOPPED':
-        run_fg('bin/supervisorctl stop {}'.format(name))
+        run_fg('bin/supervisorctl stop {0}'.format(name))
 
 
 def maybe_start(name):
     status = supervisor_status()
     if name in status and status[name] != 'RUNNING':
-        run_fg('bin/supervisorctl update {}'.format(name))
-        run_fg('bin/supervisorctl start {}'.format(name))
+        run_fg('bin/supervisorctl update {0}'.format(name))
+        run_fg('bin/supervisorctl start {0}'.format(name))
 
 
 def maybe_restart(name):
@@ -245,7 +245,7 @@ def is_zero_downtime_configured():
 
 if __name__ == '__main__':
     setup_logging()
-    LOG.info('"{}" invoked by {}.'.format(
+    LOG.info('"{0}" invoked by {1}.'.format(
         ' '.join(sys.argv),
         os.environ.get('SSH_USER_NAME',
                        os.environ.get('SSH_USER_EMAIL',
