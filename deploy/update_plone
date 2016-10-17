@@ -58,6 +58,7 @@ def update_plone(oldrev, newrev):
     update_supervisor_config()
     recook_resources()
     maybe_start('instancepub')
+    maybe_stop('instance0')
 
 
 def run_bg(cmd, cwd=None):
