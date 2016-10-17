@@ -55,6 +55,7 @@ def update_plone(oldrev, newrev):
     else:
         restart_load_balanced_instances()
 
+    update_supervisor_config()
     recook_resources()
     maybe_start('instancepub')
 
@@ -208,6 +209,59 @@ def has_proposed_upgrades():
 def recook_resources():
     for site in get_sites():
         run_fg('bin/upgrade recook -s %s' % site['path'])
+
+
+def update_supervisor_config():
+    """
+    "./bin/supervisorctl reread" has output when the supervisor configuration
+    has changed, e.g.:
+    $ ./bin/supervisorctl reread
+    instance1: changed
+    redis: available
+
+    For updating the supervisor daemon with the new settings, use the "update"
+    action:
+    $ ./bin/supervisorctl update instance1
+    instance1: stopped
+    instance1: updated process group
+
+    As this does restart the programs, we do not want to do it for all programs
+    (not for zeo, for example) and we do not want to stop all programs at once.
+    We also do it at the end of the update as we might already have updated
+    programs earlier when restarting them.
+    """
+
+    blacklist = (
+        # Do not restart "zeo" automatically as it may result in
+        # an unexpected downtime.
+        'zeo',
+    )
+
+    print ''
+    print ''
+    print ''
+    updates = run_bg('bin/supervisorctl reread')
+    print 'Supervisor configuration reread: ', updates
+    LOG.info('Supervisor configuration reread: {0}'.format(updates))
+
+    if ':' not in updates:
+        # No config updates to processes
+        return
+
+    for line in updates.strip().splitlines():
+        program, state = line.strip().split(': ', 1)
+        if program in blacklist:
+            msg = ('Changes on program "{0}" are not automatically updated'
+                   ' because the program is blacklisted.'
+                   ' Manual action is necessary!').format(program)
+            LOG.warning(msg)
+            print '-' * 30
+            print 'WARNING:', msg
+            print '-' * 30
+            continue
+
+        print 'Updating {0} ({1})'.format(program, state)
+        run_fg('bin/supervisorctl update {0}'.format(program))
 
 
 def get_sites():
