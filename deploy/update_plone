@@ -46,11 +46,17 @@ def update_plone(oldrev, newrev):
     maybe_restart('redis')
 
     maybe_start('instance0')
-    if has_proposed_upgrades():
+    proposed_upgrades = has_proposed_upgrades()
+    plone_upgrades = plone_upgrade_needed()
+    if proposed_upgrades or plone_upgrades:
         if not zero_downtime:
             stop_load_balanced_instances()
 
-        run_upgrades()
+        if plone_upgrades:
+            run_plone_upgrades()
+        if proposed_upgrades:
+            run_upgrades()
+
         start_load_balanced_instances()
     else:
         restart_load_balanced_instances()
@@ -205,6 +211,24 @@ def has_proposed_upgrades():
     print 'Proposed upgrades: 0'
     sys.stdout.flush()
     return False
+
+
+def plone_upgrade_needed():
+    for site in get_sites():
+        command = './bin/upgrade plone_upgrade_needed -s %s' % site['path']
+        if json.loads(run_bg(command)):
+            print 'Plone upgrade needed.'
+            sys.stdout.flush()
+            return True
+
+    return False
+
+
+def run_plone_upgrades():
+    print 'Running Plone upgrades:'
+    for site in get_sites():
+        run_fg('bin/upgrade plone_upgrade -s %s' % site['path'])
+    return True
 
 
 def recook_resources():
