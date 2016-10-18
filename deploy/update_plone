@@ -57,7 +57,7 @@ def update_plone(oldrev, newrev):
         if proposed_upgrades:
             run_upgrades()
 
-        start_load_balanced_instances()
+        restart_load_balanced_instances()
     else:
         restart_load_balanced_instances()
 
@@ -151,13 +151,6 @@ def stop_load_balanced_instances():
     names = [name for (name, status) in load_balanced_instances()
              if status != 'STOPPED' and name != 'instance0']
     run_fg('bin/supervisorctl stop {0}'.format(' '.join(names)))
-
-
-def start_load_balanced_instances():
-    names = [name for (name, status) in load_balanced_instances()
-             if status != 'RUNNING' and name != 'instance0']
-    run_fg('bin/supervisorctl update {0}'.format(' '.join(names)))
-    run_fg('bin/supervisorctl start {0}'.format(' '.join(names)))
 
 
 def restart_load_balanced_instances():
