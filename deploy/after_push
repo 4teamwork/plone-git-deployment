@@ -6,7 +6,11 @@ newrev=$2
 # Evaluate enviornment setup scripts
 if [ -d ~/etc/env.d ]; then
     for env_script in `ls ~/etc/env.d` ; do
-        . ~/etc/env.d/$env_script
+        # When evaulating our standard rbenv.sh, it will exit with code 1
+        # and will break push deployment.
+        if [[ "$env_script" != "rbenv.sh" ]]; then
+            . ~/etc/env.d/$env_script
+        fi
     done
 fi
 
