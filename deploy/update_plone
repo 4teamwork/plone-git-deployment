@@ -187,8 +187,12 @@ def run_buildout():
 
 
 def run_upgrades():
+    maybe_stop('Memmon')
+
     for site in get_sites():
         run_fg('bin/upgrade install -s %s --proposed' % site['path'])
+
+    maybe_start('Memmon')
     return True
 
 
