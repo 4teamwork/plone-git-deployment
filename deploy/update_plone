@@ -16,7 +16,7 @@ LOG = logging.getLogger('update_plone')
 
 
 def update_plone(oldrev, newrev):
-    zero_downtime = is_zero_downtime_configured()
+    zero_downtime = is_zero_downtime_configured(newrev)
     print 'UPDATE PLONE'
     print '${0} -> ${1}'.format(oldrev, newrev)
 
@@ -307,16 +307,24 @@ def setup_logging():
     logger.addHandler(handler)
 
 
-def is_zero_downtime_configured():
+def is_zero_downtime_configured(newrev):
     # The zero downtime configuration must be in the buildout.cfg (may be a
     # symlink) but cannot be in an "extends" since those are not followed!
     parser = ConfigParser.SafeConfigParser()
     parser.read('buildout.cfg')
     option = ('buildout', 'deployment-zero-downtime')
-    if not parser.has_option(*option):
-        return False
-    truthy = ('y', 'yes', 't', 'true', 'on', '1')
-    return parser.get(*option).strip().lower() in truthy
+    if parser.has_option(*option):
+        truthy = ('y', 'yes', 't', 'true', 'on', '1')
+        if parser.get(*option).strip().lower() in truthy:
+            return True
+
+    # Maybe there is a branch "zero-downtime".
+    # When there is one, and it contains our target rev, it save
+    # to update update in zero downtime mode.
+    branches_with_rev = map(
+        lambda line: re.sub('^\* ', '', line.strip()),
+        run_bg('git branch --contains {0}'.format(newrev)).splitlines())
+    return 'zero-downtime' in branches_with_rev
 
 
 if __name__ == '__main__':
