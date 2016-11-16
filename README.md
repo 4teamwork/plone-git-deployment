@@ -184,3 +184,18 @@ extends =
 
 deployment-zero-downtime = true
 ```
+
+**Deploy one commit with zero downtime**
+
+When deploying a commit with upgrade steps, the site will be taken offline
+unless zero downtime is configured.
+But sometimes we want to deploy a commit with (fast) upgrades to a
+non-zero-downtime deployment, but without downtime.
+For marking a commit as "zero-downtime proof", you can push it to the branch
+`zero-downtime` on the deployment remote, before doing a regular deployment.
+
+Example:
+```sh
+$ git push testing master:zero-downtime
+$ git push testing master
+```
