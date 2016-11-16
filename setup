@@ -26,12 +26,10 @@ set -v
 
 mkdir -p deploy tmp scripts
 curl https://raw.githubusercontent.com/4teamwork/plone-git-deployment/master/deploy/after_push > deploy/after_push
-curl https://raw.githubusercontent.com/4teamwork/plone-git-deployment/master/deploy/notify_errbit > deploy/notify_errbit
 curl https://raw.githubusercontent.com/4teamwork/plone-git-deployment/master/deploy/pull > deploy/pull
 curl https://raw.githubusercontent.com/4teamwork/plone-git-deployment/master/deploy/update_plone > deploy/update_plone
 curl https://raw.githubusercontent.com/4teamwork/plone-git-deployment/master/scripts/setup-git-remotes > scripts/setup-git-remotes
 chmod +x deploy/after_push
-chmod +x deploy/notify_errbit
 chmod +x deploy/pull
 chmod +x deploy/update_plone
 chmod +x scripts/setup-git-remotes
