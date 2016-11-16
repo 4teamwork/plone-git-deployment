@@ -181,8 +181,9 @@ def maybe_start(name):
 
 
 def maybe_restart(name):
-    maybe_stop(name)
-    maybe_start(name)
+    status = supervisor_status()
+    if name in status:
+        run_fg('bin/supervisorctl restart {0}'.format(name))
 
 
 def maybe_refresh_settings(name):
