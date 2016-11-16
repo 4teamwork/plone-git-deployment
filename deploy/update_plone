@@ -36,6 +36,7 @@ def update_plone(oldrev, newrev):
     maybe_start('maintenance')
     maybe_stop('instance0')
     maybe_stop('instancepub')
+    maybe_stop('Memmon')
 
     if buildout_required:
         run_buildout()
@@ -65,6 +66,8 @@ def update_plone(oldrev, newrev):
     recook_resources()
     maybe_start('instancepub')
     maybe_stop('instance0')
+    maybe_refresh_settings('Memmon')
+    maybe_start('Memmon')
 
 
 def run_bg(cmd, cwd=None):
@@ -182,17 +185,24 @@ def maybe_restart(name):
     maybe_start(name)
 
 
+def maybe_refresh_settings(name):
+    # Event listeners cannot be updated by a reread / update,
+    # but it they are updated when removing / readding.
+    status = supervisor_status()
+    if name not in status:
+        return
+
+    run_fg('bin/supervisorctl remove {0}'.format(name))
+    run_fg('bin/supervisorctl add {0}'.format(name))
+
+
 def run_buildout():
     run_fg('bin/buildout')
 
 
 def run_upgrades():
-    maybe_stop('Memmon')
-
     for site in get_sites():
         run_fg('bin/upgrade install -s %s --proposed' % site['path'])
-
-    maybe_start('Memmon')
     return True
 
 
