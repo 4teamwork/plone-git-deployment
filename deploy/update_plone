@@ -6,6 +6,7 @@ import logging
 import os
 import re
 import shlex
+import socket
 import subprocess
 import sys
 
@@ -13,9 +14,13 @@ import sys
 CHANGED_FILES = []
 SITES = []
 LOG = logging.getLogger('update_plone')
+USER = os.environ.get('SSH_USER_NAME',
+                      os.environ.get('SSH_USER_EMAIL',
+                                     os.environ.get('USER', 'unknown user')))
 
 
 def update_plone(oldrev, newrev):
+    slack_started(oldrev, newrev)
     zero_downtime = is_zero_downtime_configured(newrev)
     print 'UPDATE PLONE'
     print '${0} -> ${1}'.format(oldrev, newrev)
@@ -68,9 +73,10 @@ def update_plone(oldrev, newrev):
     maybe_stop('instance0')
     maybe_refresh_settings('Memmon')
     maybe_start('Memmon')
+    slack(':+1: Deployment of `{0}` finished.'.format(newrev[:7]))
 
 
-def run_bg(cmd, cwd=None):
+def run_bg(cmd, cwd=None, abort_on_error=True):
     if isinstance(cmd, unicode):
        cmd = cmd.encode('ascii','ignore')
     proc = subprocess.Popen(shlex.split(cmd),
@@ -79,11 +85,12 @@ def run_bg(cmd, cwd=None):
                             cwd=cwd)
 
     stdout, stderr = proc.communicate()
-    if proc.poll():
+    if proc.poll() and abort_on_error:
         print 'ERROR {0}'.format(cmd)
         print stdout
         print stderr
         sys.stdout.flush()
+        slack(':boom: Deployment failed on "{0}"'.format(cmd), icon=':rage:')
         sys.exit(1)
     return stdout
 
@@ -95,6 +102,7 @@ def run_fg(cmd, abort_on_error=True):
     sys.stdout.flush()
     if os.system(cmd):
         if abort_on_error:
+            slack(':boom: Deployment failed on "{0}"'.format(cmd), icon=':rage:')
             sys.exit(1)
         else:
             return False
@@ -338,11 +346,43 @@ def is_zero_downtime_configured(newrev):
     return 'zero-downtime' in branches_with_rev
 
 
+def slack_started(oldrev, newrev):
+    if not os.path.isfile('bin/slacker'):
+        return
+
+    commits = run_bg('git --no-pager log --pretty="format:- %h %s" {0}..{1}'
+                     .format(oldrev, newrev))
+    hostname = socket.gethostname()
+    deployment = os.path.basename(os.getcwd())
+    payload = {
+        'text': ':shipit: *{0}* started deploying `{1}` to `{2}` (at `{3}`)'.format(
+            USER, newrev[:7], deployment, hostname),
+        'username': 'push deployment',
+        'icon_emoji': ':robot_face:',
+        'attachments': [
+            {'text': commits.strip()}
+        ]
+    }
+    cmd ='bin/slacker -r -t "{0}"'.format(
+        json.dumps(payload).replace('"', '\\"'))
+    run_bg(cmd, abort_on_error=False)
+
+
+def slack(message, icon=':robot_face:'):
+    if not os.path.isfile('bin/slacker'):
+        return
+
+    cmd ='bin/slacker -t ":shipit: {0}" -u "push deployment" -i "{1}"'.format(
+        message, icon)
+    run_bg(cmd, abort_on_error=False)
+
+
 if __name__ == '__main__':
     setup_logging()
     LOG.info('"{0}" invoked by {1}.'.format(
-        ' '.join(sys.argv),
-        os.environ.get('SSH_USER_NAME',
-                       os.environ.get('SSH_USER_EMAIL',
-                                      os.environ.get('USER', 'unknown user')))))
-    update_plone(*sys.argv[1:])
+        ' '.join(sys.argv), USER))
+    try:
+        update_plone(*sys.argv[1:])
+    except Exception, exc:
+        slack(':boom: Deployment failed: {0}'.format(str(exc)), icon=':rage:')
+        raise exc
