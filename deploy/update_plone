@@ -351,8 +351,14 @@ def slack_started(oldrev, newrev):
         return
 
     commits = run_bg('git --no-pager log --first-parent'
-                     ' --pretty="format:- %h %s" {0}..{1}'
+                     ' --pretty="format:%m %h %s" {0}...{1}'
                      .format(oldrev, newrev))
+    commits = map(str.strip, commits.strip().splitlines())
+    commits = [re.sub(r'^>', ':heavy_plus_sign:',
+                      re.sub(r'^<', ':x:', commit))
+               for commit in commits]
+    commits = '\n'.join(commits)
+
     hostname = socket.gethostname()
     deployment = os.path.basename(os.getcwd())
     payload = {
