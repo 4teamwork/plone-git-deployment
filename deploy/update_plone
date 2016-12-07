@@ -309,6 +309,9 @@ def update_supervisor_config():
 
 
 def get_sites():
+    if not os.path.isfile('./bin/upgrade'):
+        return ()
+
     if len(SITES) == 0:
         SITES.extend(json.loads(run_bg('./bin/upgrade sites --json')))
         if len(SITES) == 0:
