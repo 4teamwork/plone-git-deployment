@@ -188,6 +188,9 @@ def maybe_start(name):
     status = supervisor_status()
     if name in status and status[name] != 'RUNNING':
         run_fg('bin/supervisorctl update {0}'.format(name))
+
+    status = supervisor_status()
+    if name in status and status[name] not in ('RUNNING', 'STARTING'):
         run_fg('bin/supervisorctl start {0}'.format(name))
 
 
