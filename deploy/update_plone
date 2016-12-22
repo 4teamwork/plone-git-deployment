@@ -19,6 +19,33 @@ USER = os.environ.get('SSH_USER_NAME',
                                      os.environ.get('USER', 'unknown user')))
 
 
+# Supervisorctrl does not tell whether something is a
+# program or an eventlistener; therefore we keep a list of known
+# eventlisteners.
+EVENTLISTENERS = (
+    'HaProxy',
+    'HttpOk1',
+    'HttpOk2',
+    'HttpOk3',
+    'HttpOk4',
+    'HttpOkpub',
+    'Memmon',
+)
+
+
+# Some programs and eventlisteners should be stopped while updating.
+# They are restarted if they were running before.
+ASSURE_STOPPED = (
+    'HttpOk1',
+    'HttpOk2',
+    'HttpOk3',
+    'HttpOk4',
+    'HttpOkpub',
+    'Memmon',
+    'instancepub',
+)
+
+
 def update_plone(oldrev, newrev):
     slack_started(oldrev, newrev)
     zero_downtime = is_zero_downtime_configured(newrev)
@@ -40,12 +67,11 @@ def update_plone(oldrev, newrev):
 
     maybe_start('maintenance')
     maybe_stop('instance0')
-    maybe_stop('instancepub')
-    maybe_stop('Memmon')
+
+    start_after_update = map(maybe_stop, ASSURE_STOPPED)
 
     if buildout_required:
         run_buildout()
-        run_fg('bin/supervisorctl reread')
 
     maybe_restart('solr')
     maybe_restart('tika-server')
@@ -69,10 +95,15 @@ def update_plone(oldrev, newrev):
 
     update_supervisor_config()
     recook_resources()
-    maybe_start('instancepub')
     maybe_stop('instance0')
-    maybe_refresh_settings('Memmon')
-    maybe_start('Memmon')
+
+    # update_supervisor_config did not update event listeners
+    # since "reread" does not list its changes.
+    # We refresh them if we are about to start them anyway.
+    map(maybe_refresh_settings,
+        list(set(EVENTLISTENERS) & set(start_after_update)))
+    map(maybe_start, start_after_update)
+
     slack(':+1: Deployment of `{0}` finished.'.format(newrev[:7]))
 
 
@@ -181,7 +212,8 @@ def restart_load_balanced_instances():
 def maybe_stop(name):
     status = supervisor_status()
     if name in status and status[name] != 'STOPPED':
-        run_fg('bin/supervisorctl stop {0}'.format(name))
+        return run_fg('bin/supervisorctl stop {0}'.format(name))
+    return False
 
 
 def maybe_start(name):
