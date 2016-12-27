@@ -412,7 +412,7 @@ def slack_started(oldrev, newrev):
         ]
     }
     cmd ='bin/slacker -r -t "{0}"'.format(
-        json.dumps(payload).replace('"', '\\"'))
+        json.dumps(payload).replace('"', '\\"').replace('\\\\"', '\\\\\\"'))
     run_bg(cmd, abort_on_error=False)
 
 
