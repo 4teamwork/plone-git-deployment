@@ -68,7 +68,7 @@ def update_plone(oldrev, newrev):
     maybe_start('maintenance')
     maybe_stop('instance0')
 
-    start_after_update = map(maybe_stop, ASSURE_STOPPED)
+    start_after_update = filter(maybe_stop, ASSURE_STOPPED)
 
     if buildout_required:
         run_buildout()
