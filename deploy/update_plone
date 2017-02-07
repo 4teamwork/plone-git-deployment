@@ -234,7 +234,7 @@ def maybe_restart(name):
 
 def maybe_refresh_settings(name):
     # Event listeners cannot be updated by a reread / update,
-    # but it they are updated when removing / readding.
+    # but they are updated when removing / readding.
     status = supervisor_status()
     if name not in status:
         return
