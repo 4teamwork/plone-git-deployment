@@ -104,7 +104,7 @@ def update_plone(oldrev, newrev):
         list(set(EVENTLISTENERS) & set(start_after_update)))
     map(maybe_start, start_after_update)
 
-    slack(':+1: Deployment of `{0}` finished.'.format(newrev[:7]))
+    slack_finished(newrev)
 
 
 def run_bg(cmd, cwd=None, abort_on_error=True):
@@ -420,6 +420,13 @@ def slack_started(oldrev, newrev):
     cmd ='bin/slacker -r -t "{0}"'.format(
         json.dumps(payload).replace('"', '\\"').replace('\\\\"', '\\\\\\"'))
     run_bg(cmd, abort_on_error=False)
+
+
+def slack_finished(newrev):
+    hostname = socket.gethostname()
+    deployment = os.path.basename(os.getcwd())
+    slack(':+1: Deployment finished: installed `{0}` to `{1}` (at `{2}`)'.format(
+        newrev[:7], deployment, hostname))
 
 
 def slack(message, icon=':robot_face:'):
