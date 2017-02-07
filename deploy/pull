@@ -28,7 +28,7 @@ if [ $oldrev == $newrev ]; then
 fi
 
 echo "> deploy/after_push"
-logfile=log/deploy.log
+logfile=var/log/deploy.log
 deploy/after_push $oldrev $newrev 2>&1 | tee -a $logfile
 if [ $? -eq 0 ]; then
     git rev-parse HEAD > ./.git/LAST_DEPLOY_HEAD
