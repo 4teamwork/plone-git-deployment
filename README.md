@@ -199,3 +199,12 @@ Example:
 $ git push testing master:zero-downtime
 $ git push testing master
 ```
+
+**Activate zero downtime by environment variable**
+When using deploy/pull, we can activate the zero downtime strategy
+with an environment variable:
+
+Example:
+```sh
+$ ZERO_DOWNTIME=true deploy/pull
+```

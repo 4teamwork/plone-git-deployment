@@ -368,15 +368,21 @@ def setup_logging():
 
 
 def is_zero_downtime_configured(newrev):
+    truthy = ('y', 'yes', 't', 'true', 'on', '1')
     # The zero downtime configuration must be in the buildout.cfg (may be a
     # symlink) but cannot be in an "extends" since those are not followed!
     parser = ConfigParser.SafeConfigParser()
     parser.read('buildout.cfg')
     option = ('buildout', 'deployment-zero-downtime')
     if parser.has_option(*option):
-        truthy = ('y', 'yes', 't', 'true', 'on', '1')
         if parser.get(*option).strip().lower() in truthy:
             return True
+
+    # When using deploy/pull, we can activate the zero downtime strategy
+    # with an environment variable:
+    # ZERO_DOWNTIME=true
+    if os.environ.get('ZERO_DOWNTIME', '').strip().lower() in truthy:
+        return True
 
     # Maybe there is a branch "zero-downtime".
     # When there is one, and it contains our target rev, it save
