@@ -11,6 +11,8 @@ import subprocess
 import sys
 
 
+SLACK_USERNAME = "deployment"
+
 CHANGED_FILES = []
 SITES = []
 LOG = logging.getLogger('update_plone')
@@ -121,7 +123,7 @@ def run_bg(cmd, cwd=None, abort_on_error=True):
         print stdout
         print stderr
         sys.stdout.flush()
-        slack(':boom: Deployment failed on "{0}"'.format(cmd), icon=':rage:')
+        slack_failed(cmd)
         sys.exit(1)
     return stdout
 
@@ -133,7 +135,7 @@ def run_fg(cmd, abort_on_error=True):
     sys.stdout.flush()
     if os.system(cmd):
         if abort_on_error:
-            slack(':boom: Deployment failed on "{0}"'.format(cmd), icon=':rage:')
+            slack_failed(cmd)
             sys.exit(1)
         else:
             return False
@@ -411,7 +413,7 @@ def slack_started(oldrev, newrev):
     payload = {
         'text': ':shipit: *{0}* started deploying `{1}` to `{2}` (at `{3}`)'.format(
             USER, newrev[:7], deployment, hostname),
-        'username': 'push deployment',
+        'username': SLACK_USERNAME,
         'icon_emoji': ':robot_face:',
         'attachments': [
             {'text': commits.strip()}
@@ -429,12 +431,19 @@ def slack_finished(newrev):
         newrev[:7], deployment, hostname))
 
 
+def slack_failed(msg):
+    hostname = socket.gethostname()
+    deployment = os.path.basename(os.getcwd())
+    slack(':boom: Deployment failed: `{0}` to `{1}` (at `{2}`)'.format(
+        msg, deployment, hostname), icon=':rage:')
+
+
 def slack(message, icon=':robot_face:'):
     if not os.path.isfile('bin/slacker'):
         return
 
-    cmd ='bin/slacker -t ":shipit: {0}" -u "push deployment" -i "{1}"'.format(
-        message, icon)
+    cmd = 'bin/slacker -t ":shipit: {0}" -u "{1}" -i "{2}"'.format(
+        message, SLACK_USERNAME, icon)
     run_bg(cmd, abort_on_error=False)
 
 
@@ -445,5 +454,5 @@ if __name__ == '__main__':
     try:
         update_plone(*sys.argv[1:])
     except Exception, exc:
-        slack(':boom: Deployment failed: {0}'.format(str(exc)), icon=':rage:')
+        slack_failed(str(exc))
         raise
