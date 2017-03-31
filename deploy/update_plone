@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import ConfigParser
 import json
 import logging
@@ -48,7 +49,7 @@ ASSURE_STOPPED = (
 )
 
 
-def update_plone(oldrev, newrev):
+def update_plone(oldrev, newrev, force=False):
     slack_started(oldrev, newrev)
     zero_downtime = is_zero_downtime_configured(newrev)
     print 'UPDATE PLONE'
@@ -62,7 +63,11 @@ def update_plone(oldrev, newrev):
     print ''
     print ''
 
-    buildout_required = has_changed(r'^.*\.cfg$') or has_changed(r'setup.py')
+    buildout_required = (
+        force or
+        has_changed(r'^.*\.cfg$') or
+        has_changed(r'setup.py')
+    )
     print 'buildout required:', bool(buildout_required)
     print 'zero downtime:', zero_downtime
     sys.stdout.flush()
@@ -452,7 +457,13 @@ if __name__ == '__main__':
     LOG.info('"{0}" invoked by {1}.'.format(
         ' '.join(sys.argv), USER))
     try:
-        update_plone(*sys.argv[1:])
+        parser = argparse.ArgumentParser()
+        parser.add_argument('oldrev', type=str)
+        parser.add_argument('newrev', type=str)
+        parser.add_argument('--force', action='store_true')
+        args = parser.parse_args()
+
+        update_plone(args.oldrev, args.newrev, force=args.force)
     except Exception, exc:
         slack_failed(str(exc))
         raise
