@@ -95,6 +95,10 @@ def update_plone(oldrev, newrev, force=False):
             run_plone_upgrades()
         if proposed_upgrades:
             run_upgrades()
+            # If the installed upgrades revealed new proposed upgrades,
+            # we want to install them now too.
+            if has_proposed_upgrades():
+                run_upgrades()
 
         restart_load_balanced_instances()
     else:
