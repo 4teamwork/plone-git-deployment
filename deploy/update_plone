@@ -79,6 +79,8 @@ def update_plone(oldrev, newrev, force=False):
 
     if buildout_required:
         run_buildout()
+    else:
+        precompile()
 
     maybe_restart('solr')
     maybe_restart('tika-server')
@@ -256,6 +258,31 @@ def maybe_refresh_settings(name):
 
 def run_buildout():
     run_fg('bin/buildout')
+
+
+def precompile():
+    """Precompiles python files and translations if the precompile.cfg
+    buildout is in use.
+
+    See https://github.com/4teamwork/ftw-buildouts/blob/master/precompile.cfg
+
+    In environments where the service user (which runs the zope process)
+    is not allowed to write sources files it is necessary to precompile python
+    code and translation files on installation / update time.
+
+    When the precompile.cfg is used this is done in a complete buildout run.
+    If it isn't necessary to run buildout, we must still run the precompile
+    part in order to ensure that we have compiled changes in python code and
+    translation files which are shipped in the primary repository (source
+    checkout).
+    """
+    # Look at the .installed.cfg for figuring out whether precompile.cfg is
+    # in use, by searching for the [precompile] section.
+    with open('.installed.cfg', 'r') as fio:
+        if '[precompile]' not in fio.read():
+            return
+
+    run_fg('bin/buildout install precompile')
 
 
 def run_upgrades():
