@@ -49,7 +49,7 @@ ASSURE_STOPPED = (
 )
 
 
-def update_plone(oldrev, newrev, force=False):
+def update_plone(oldrev, newrev, force=False, skip_deferrable=False):
     slack_started(oldrev, newrev)
     zero_downtime = is_zero_downtime_configured(newrev)
     print 'UPDATE PLONE'
@@ -96,11 +96,11 @@ def update_plone(oldrev, newrev, force=False):
         if plone_upgrades:
             run_plone_upgrades()
         if proposed_upgrades:
-            run_upgrades()
+            run_upgrades(skip_deferrable=skip_deferrable)
             # If the installed upgrades revealed new proposed upgrades,
             # we want to install them now too.
             if has_proposed_upgrades():
-                run_upgrades()
+                run_upgrades(skip_deferrable=skip_deferrable)
 
         restart_load_balanced_instances()
     else:
@@ -285,9 +285,13 @@ def precompile():
     run_fg('bin/buildout install precompile')
 
 
-def run_upgrades():
+def run_upgrades(skip_deferrable=False):
     for site in get_sites():
-        run_fg('bin/upgrade install -s %s --proposed' % site['path'])
+        flags = '--proposed'
+        if skip_deferrable:
+            flags += ' --skip-deferrable'
+
+        run_fg('bin/upgrade install -s %s %s' % (site['path'], flags))
     return True
 
 
@@ -492,9 +496,11 @@ if __name__ == '__main__':
         parser.add_argument('oldrev', type=str)
         parser.add_argument('newrev', type=str)
         parser.add_argument('--force', action='store_true')
+        parser.add_argument('--skip-deferrable', action='store_true')
         args = parser.parse_args()
 
-        update_plone(args.oldrev, args.newrev, force=args.force)
+        update_plone(args.oldrev, args.newrev, force=args.force,
+                     skip_deferrable=args.skip_deferrable)
     except Exception, exc:
         slack_failed(str(exc))
         raise
