@@ -74,6 +74,7 @@ def update_plone(oldrev, newrev, force=False, skip_deferrable=False):
 
     maybe_start('maintenance')
     maybe_stop('instance0')
+    purge_chameleon_cache('instance0')
 
     start_after_update = filter(maybe_stop, ASSURE_STOPPED)
 
@@ -218,8 +219,32 @@ def restart_load_balanced_instances():
 
         if status != 'STOPPED':
             run_fg('bin/supervisorctl stop {0}'.format(instance_name))
+
+        purge_chameleon_cache(instance_name)
         run_fg('bin/supervisorctl update {0}'.format(instance_name))
         run_fg('bin/supervisorctl start {0}'.format(instance_name))
+
+
+def purge_chameleon_cache(instance_name):
+    """Purge the chameleon cache of a specific zope instance.
+
+    The chameleon cache is not cleaned up automatically.
+    In order to keep the size of the chameleon cache low, we purge the cache
+    while installing an update.
+
+    Since https://github.com/4teamwork/ftw-buildouts/pull/110 we usually
+    have a separate cache directory for each instance, when chameleon.cfg
+    is used.
+
+    This function is expected to be called when the instance is not running.
+    """
+    chameleon_dir = os.path.abspath(os.path.join(
+        'var', instance_name, 'chameleon-cache'))
+    if not os.path.isdir(chameleon_dir):
+        # chameleon might not be enabled.
+        return
+
+    run_fg('rm {0}/*'.format(chameleon_dir), abort_on_error=False)
 
 
 def maybe_stop(name):
