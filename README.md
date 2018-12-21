@@ -1,5 +1,10 @@
 # Plone GIT deployment
 
+| WARNING: This project is no longer maintained. See [ftw.deploy](https://github.com/4teamwork/ftw.deploy)! |
+| --- |
+
+
+
 [git-deploy](https://github.com/mislav/git-deploy) allows to do deployment
 directly from git by pushing to the deployment remote.
 This tutorial shows how to use this with Plone.
